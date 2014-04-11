@@ -33,6 +33,12 @@
 #include <sys/ioctl.h>
 #include "common.h"
 
+#if PY_MAJOR_VERSION >= 3
+#define PyInt_Check(value) PyLong_Check(value)
+#define PyInt_AS_LONG(value) PyLong_AS_LONG(value)
+#define PyInt_AsLong(value) PyLong_AsLong(value)
+#endif
+
 PyDoc_STRVAR(SPI_module_doc,
 	"This module defines an object type that allows SPI transactions\n"
 	"on hosts running the Linux kernel. The host kernel must have SPI\n"
@@ -94,7 +100,7 @@ SPI_dealloc(SPI *self)
 	PyObject *ref = SPI_close(self);
 	Py_XDECREF(ref);
 
-	self->ob_type->tp_free((PyObject *)self);
+    Py_TYPE(self)->tp_free((PyObject *)self);
 }
 
 #define MAXPATH 16
@@ -785,8 +791,7 @@ static PyMethodDef SPI_methods[] = {
 };
 
 static PyTypeObject SPI_type = {
-	PyObject_HEAD_INIT(NULL)
-	0,				/* ob_size */
+    PyVarObject_HEAD_INIT(NULL, 0)
 	"SPI",			/* tp_name */
 	sizeof(SPI),			/* tp_basicsize */
 	0,				/* tp_itemsize */
@@ -830,20 +835,37 @@ static PyMethodDef SPI_module_methods[] = {
 	{NULL}
 };
 
-#ifndef PyMODINIT_FUNC	/* declarations for DLL import/export */
-#define PyMODINIT_FUNC void
+#if PY_MAJOR_VERSION >= 3
+  #define MOD_ERROR_VAL NULL
+  #define MOD_SUCCESS_VAL(val) val
+  #define MOD_INIT(name) PyMODINIT_FUNC PyInit_##name(void)
+  #define MOD_DEF(ob, name, doc, methods) \
+          static struct PyModuleDef moduledef = { \
+            PyModuleDef_HEAD_INIT, name, doc, -1, methods, }; \
+          ob = PyModule_Create(&moduledef);
+#else
+  #define MOD_ERROR_VAL
+  #define MOD_SUCCESS_VAL(val)
+  #define MOD_INIT(name) void init##name(void)
+  #define MOD_DEF(ob, name, doc, methods) \
+          ob = Py_InitModule3(name, methods, doc);
 #endif
-PyMODINIT_FUNC
-initSPI(void)
+
+MOD_INIT(SPI)
 {
-	PyObject* m;
+    PyObject *m;
 
-	if (PyType_Ready(&SPI_type) < 0)
-		return;
+    MOD_DEF(m, "SPI", SPI_module_doc,
+            SPI_module_methods)
 
-	m = Py_InitModule3("SPI", SPI_module_methods, SPI_module_doc);
-	Py_INCREF(&SPI_type);
-	PyModule_AddObject(m, "SPI", (PyObject *)&SPI_type);
+    if (m == NULL)
+        return MOD_ERROR_VAL;
+
+    if (PyType_Ready(&SPI_type) < 0)
+        return MOD_ERROR_VAL;
+
+    Py_INCREF(&SPI_type);
+    PyModule_AddObject(m, "SPI", (PyObject *)&SPI_type);
+
+    return MOD_SUCCESS_VAL(m);
 }
-
-

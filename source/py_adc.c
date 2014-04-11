@@ -26,6 +26,10 @@ SOFTWARE.
 #include "common.h"
 #include "c_adc.h"
 
+/*
+ * disable cleanup for now, as unloading the driver locks up the system
+ *
+
 // python function cleanup()
 static PyObject *py_cleanup(PyObject *self, PyObject *args)
 {
@@ -34,6 +38,7 @@ static PyObject *py_cleanup(PyObject *self, PyObject *args)
 
     Py_RETURN_NONE;
 }
+*/
 
 // python function setup()
 static PyObject *py_setup_adc(PyObject *self, PyObject *args)

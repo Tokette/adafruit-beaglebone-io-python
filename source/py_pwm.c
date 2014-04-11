@@ -60,6 +60,10 @@ static PyObject *py_start_channel(PyObject *self, PyObject *args, PyObject *kwar
     if (!PyArg_ParseTupleAndKeywords(args, kwargs, "s|ffi", kwlist, &channel, &duty_cycle, &frequency, &polarity))
         return NULL;
 
+    if (!module_setup) {
+       init_module();
+    }
+
     if (!get_pwm_key(channel, key)) {
         PyErr_SetString(PyExc_ValueError, "Invalid PWM key or name.");
         return NULL;    
